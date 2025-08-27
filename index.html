@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKIA Events Portal</title>
+    <title>SKI Academy Events Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes pulse {
@@ -104,8 +104,8 @@ function SKIAPortal() {
     const [selectedTerm, setSelectedTerm] = React.useState('all');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [selectedType, setSelectedType] = React.useState('all');
+    const [modalView, setModalView] = React.useState(null);
     
-    // Get today's date at midnight for consistent comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -115,19 +115,16 @@ function SKIAPortal() {
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
     
-    // Parse date string to Date object
     const parseDate = (dateStr) => {
         const date = new Date(dateStr);
         date.setHours(0, 0, 0, 0);
         return date;
     };
     
-    // Get event status
     const getEventStatus = (event) => {
         const eventDate = parseDate(event.date);
         const eventEndDate = event.endDate ? parseDate(event.endDate) : eventDate;
         
-        // Check if today falls within the event range
         if (eventDate <= today && today <= eventEndDate) {
             return 'today';
         }
@@ -143,10 +140,8 @@ function SKIAPortal() {
         return 'future';
     };
     
-    // Filter events
     const filteredEvents = React.useMemo(() => {
         return SKIA_EVENTS.filter(event => {
-            // Filter by search query
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 if (!event.event.toLowerCase().includes(query)) {
@@ -154,17 +149,14 @@ function SKIAPortal() {
                 }
             }
             
-            // Filter by term
             if (selectedTerm !== 'all' && event.term !== parseInt(selectedTerm)) {
                 return false;
             }
             
-            // Filter by type
             if (selectedType !== 'all' && event.type !== selectedType) {
                 return false;
             }
             
-            // Filter by view
             const status = getEventStatus(event);
             if (selectedView === 'upcoming') {
                 return status !== 'past';
@@ -180,7 +172,6 @@ function SKIAPortal() {
         }).sort((a, b) => new Date(a.date) - new Date(b.date));
     }, [searchQuery, selectedTerm, selectedType, selectedView]);
     
-    // Count events by status
     const todayCount = SKIA_EVENTS.filter(e => getEventStatus(e) === 'today').length;
     const tomorrowCount = SKIA_EVENTS.filter(e => getEventStatus(e) === 'tomorrow').length;
     const weekCount = SKIA_EVENTS.filter(e => {
@@ -188,18 +179,15 @@ function SKIAPortal() {
         return status === 'today' || status === 'tomorrow' || status === 'next7days';
     }).length;
     
-    // Format date for display
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
         return date.toLocaleDateString('en-US', options);
     };
     
-    // Get color classes based on status ONLY
     const getEventColors = (event) => {
         const status = getEventStatus(event);
         
-        // Only 3 colors based on timing
         if (status === 'today') {
             return 'border-l-4 border-green-500 bg-green-50';
         }
@@ -210,11 +198,9 @@ function SKIAPortal() {
             return 'border-l-4 border-purple-500 bg-purple-50';
         }
         
-        // Default gray for all other events
         return 'border-l-4 border-gray-300 bg-gray-50';
     };
     
-    // Get badge for event type
     const getTypeBadge = (type) => {
         const badges = {
             holiday: { text: 'Holiday', class: 'bg-red-100 text-red-800' },
@@ -231,12 +217,10 @@ function SKIAPortal() {
         return badges[type] || { text: 'Event', class: 'bg-gray-100 text-gray-800' };
     };
     
-    // Export to ICS (Calendar) function
     const exportToCalendar = (event) => {
         const startDate = new Date(event.date);
         const endDate = event.endDate ? new Date(event.endDate) : startDate;
         
-        // Format dates for ICS
         const formatICSDate = (date) => {
             return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
         };
@@ -261,7 +245,6 @@ END:VCALENDAR`;
         URL.revokeObjectURL(url);
     };
     
-    // Export all filtered events
     const exportAllEvents = () => {
         const formatICSDate = (date) => {
             return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -300,6 +283,24 @@ END:VEVENT
         URL.revokeObjectURL(url);
     };
     
+    const getModalEvents = (type) => {
+        switch(type) {
+            case 'today':
+                return SKIA_EVENTS.filter(e => getEventStatus(e) === 'today');
+            case 'tomorrow':
+                return SKIA_EVENTS.filter(e => getEventStatus(e) === 'tomorrow');
+            case 'next7days':
+                return SKIA_EVENTS.filter(e => {
+                    const status = getEventStatus(e);
+                    return status === 'today' || status === 'tomorrow' || status === 'next7days';
+                });
+            case 'all':
+                return SKIA_EVENTS;
+            default:
+                return [];
+        }
+    };
+    
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
             <div className="max-w-6xl mx-auto">
@@ -318,7 +319,6 @@ END:VEVENT
                             </div>
                         </div>
                         <div>
-                            {/* Export Button */}
                             <button
                                 onClick={exportAllEvents}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
@@ -330,9 +330,12 @@ END:VEVENT
                     </div>
                 </div>
                 
-                {/* Quick Stats */}
+                {/* Quick Stats - Clickable */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                    <div 
+                        onClick={() => setModalView('today')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Today</p>
@@ -341,7 +344,10 @@ END:VEVENT
                             <div className="text-3xl">📅</div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+                    <div 
+                        onClick={() => setModalView('tomorrow')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Tomorrow</p>
@@ -350,7 +356,10 @@ END:VEVENT
                             <div className="text-3xl">⏰</div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+                    <div 
+                        onClick={() => setModalView('next7days')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Next 7 Days</p>
@@ -359,7 +368,10 @@ END:VEVENT
                             <div className="text-3xl">📆</div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                    <div 
+                        onClick={() => setModalView('all')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Total Events</p>
@@ -373,7 +385,6 @@ END:VEVENT
                 {/* Filters */}
                 <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <div className="space-y-4">
-                        {/* View Selector */}
                         <div className="flex flex-wrap gap-2">
                             <button
                                 onClick={() => setSelectedView('upcoming')}
@@ -417,7 +428,6 @@ END:VEVENT
                             </button>
                         </div>
                         
-                        {/* Additional Filters */}
                         <div className="flex flex-wrap gap-4">
                             <select
                                 value={selectedTerm}
@@ -578,6 +588,101 @@ END:VEVENT
                     </div>
                 </div>
             </div>
+            
+            {/* Modal for Stat Cards */}
+            {modalView && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden fade-in">
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                {modalView === 'today' && (
+                                    <>
+                                        <span className="text-green-600">📅</span>
+                                        Today's Events ({getModalEvents('today').length})
+                                    </>
+                                )}
+                                {modalView === 'tomorrow' && (
+                                    <>
+                                        <span className="text-orange-600">⏰</span>
+                                        Tomorrow's Events ({getModalEvents('tomorrow').length})
+                                    </>
+                                )}
+                                {modalView === 'next7days' && (
+                                    <>
+                                        <span className="text-purple-600">📆</span>
+                                        Next 7 Days ({getModalEvents('next7days').length})
+                                    </>
+                                )}
+                                {modalView === 'all' && (
+                                    <>
+                                        <span className="text-blue-600">🎯</span>
+                                        All Events ({getModalEvents('all').length})
+                                    </>
+                                )}
+                            </h2>
+                            <button
+                                onClick={() => setModalView(null)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <div className="overflow-y-auto max-h-[60vh] space-y-2">
+                                {getModalEvents(modalView).length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <p className="text-lg">No events found</p>
+                                    </div>
+                                ) : (
+                                    getModalEvents(modalView).map((event, idx) => {
+                                        const typeBadge = getTypeBadge(event.type);
+                                        
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`${getEventColors(event)} rounded-lg p-4 fade-in`}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className="font-semibold text-gray-900">
+                                                                {event.event}
+                                                            </h3>
+                                                            {event.important && (
+                                                                <span className="text-yellow-500">⭐</span>
+                                                            )}
+                                                            {event.closed && (
+                                                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                                                    School Closed
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                            <span>📅 {formatDate(event.date)}</span>
+                                                            {event.time && <span>🕐 {event.time}</span>}
+                                                            <span className={`px-2 py-1 rounded text-xs ${typeBadge.class}`}>
+                                                                {typeBadge.text}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <button
+                                                        onClick={() => exportToCalendar(event)}
+                                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                                    >
+                                                        📅 Add
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

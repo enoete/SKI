@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKI Academy Events Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Load React FIRST -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- Add Babel to transform JSX -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Then load the main application with type="text/babel" -->
+<script type="text/babel">
+// SKIA Events Data for 2025-2026
+const SKIA_EVENTS = [
+  // AUGUST 2025
+  { date: "2025-08-25", endDate: "2025-08-29", event: "Teacher Orientation Week", type: "staff", term: 1 },
+  
+  // SEPTEMBER 2025
+  { date: "2025-09-01", event: "First Day of School for Students", type: "academic", term: 1, important: true },
+  { date: "2025-09-04", event: "K-6 Parent Orientation", time: "5:00-6:00 PM", type: "parent", term: 1 },
+  { date: "2025-09-11", event: "High School Orientation (Grades 7-12)", time: "5:00 PM", type: "parent", term: 1 },
+  { date: "2025-09-16", event: "National Heroes Day", type: "holiday", closed: true, term: 1 },
+  { date: "2025-09-18", event: "Independence Celebration in School", type: "celebration", term: 1 },
+  { date: "2025-09-19", event: "Independence Day Observation", type: "holiday", closed: true, term: 1 },
+  { date: "2025-09-22", endDate: "2025-09-26", event: "Parent/Teacher Conferences", type: "parent", term: 1 },
+  { date: "2025-09-26", event: "International Day of Peace Celebration", type: "celebration", term: 1 },
+  
+  // OCTOBER 2025
+  { date: "2025-10-06", endDate: "2025-10-10", event: "Spirit Week", type: "spirit", term: 1, important: true },
+  { date: "2025-10-20", event: "Term Break", type: "holiday", closed: true, term: 1 },
+  { date: "2025-10-31", event: "Halloween Parade", type: "celebration", term: 1 },
+  
+  // NOVEMBER 2025
+  { date: "2025-11-03", event: "Progress Reports Sent Home (PreK-Grade 12)", type: "academic", term: 1 },
+  { date: "2025-11-13", event: "Social Studies Fair", type: "academic", term: 1 },
+  { date: "2025-11-14", event: "Teacher Work Day", type: "staff", noClasses: true, term: 1 },
+  
+  // DECEMBER 2025 - JANUARY 2026
+  { date: "2025-12-08", endDate: "2026-01-05", event: "Winter Break", type: "holiday", closed: true, term: 1, important: true },
+  { date: "2026-01-05", event: "Classes Resume", type: "academic", term: 1 },
+  { date: "2026-01-22", endDate: "2026-01-27", event: "End of Term Exams (Grades 1-6)", type: "exam", term: 1, important: true },
+  { date: "2026-01-30", event: "Last Day of Term 1", type: "academic", term: 1, important: true },
+  
+  // FEBRUARY 2026
+  { date: "2026-02-02", event: "First Day of Term 2", type: "academic", term: 2, important: true },
+  { date: "2026-02-06", event: "Teacher Work Day", type: "staff", noClasses: true, term: 2 },
+  { date: "2026-02-16", endDate: "2026-02-20", event: "Parent/Teacher Conferences", type: "parent", term: 2 },
+  { date: "2026-02-26", event: "Reading Garden Party", type: "celebration", term: 2 },
+  { date: "2026-02-26", endDate: "2026-03-06", event: "Leap Into Reading (Read-A-Thon & Fundraiser)", type: "fundraiser", term: 2 },
+  
+  // MARCH 2026
+  { date: "2026-03-02", event: "Term Break", type: "holiday", closed: true, term: 2 },
+  { date: "2026-03-26", event: "Performing Arts Night & Silent Art Auction", type: "celebration", term: 2, important: true },
+  { date: "2026-03-31", event: "Progress Reports Sent Home (PreK-Grade 12)", type: "academic", term: 2 },
+  
+  // APRIL 2026
+  { date: "2026-04-03", endDate: "2026-04-20", event: "Spring Break", type: "holiday", closed: true, term: 2, important: true },
+  { date: "2026-04-20", event: "Classes Resume", type: "academic", term: 2 },
+  { date: "2026-04-22", event: "Earth Day", type: "celebration", term: 2 },
+  
+  // MAY 2026
+  { date: "2026-05-04", event: "Labour Day", type: "holiday", closed: true, term: 2 },
+  { date: "2026-05-04", endDate: "2026-05-08", event: "Teacher Appreciation Week", type: "celebration", term: 2 },
+  { date: "2026-05-08", event: "Muffins with Mom (Mother's Day Celebration)", type: "celebration", term: 2 },
+  { date: "2026-05-25", event: "Whit Monday", type: "holiday", closed: true, term: 2 },
+  
+  // JUNE 2026
+  { date: "2026-06-04", event: "Kindergarten Graduation", type: "graduation", term: 2, important: true },
+  { date: "2026-06-11", endDate: "2026-06-18", event: "Exam Week (Grades 1-6)", type: "exam", term: 2, important: true },
+  { date: "2026-06-12", event: "Donuts with Dad (Father's Day Celebration)", type: "celebration", term: 2 },
+  { date: "2026-06-17", event: "6th Grade Graduation", type: "graduation", term: 2, important: true },
+  { date: "2026-06-18", event: "High School Graduation", type: "graduation", term: 2, important: true },
+  { date: "2026-06-19", event: "Last Day of School for All Students", type: "academic", term: 2, important: true }
+];
+
+// Main App Component
+function SKIAPortal() {
+    const [selectedView, setSelectedView] = React.useState('upcoming');
+    const [selectedTerm, setSelectedTerm] = React.useState('all');
+    const [searchQuery, setSearchQuery] = React.useState('');
+    const [selectedType, setSelectedType] = React.useState('all');
+    const [modalView, setModalView] = React.useState(null);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    const parseDate = (dateStr) => {
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+    
+    const getEventStatus = (event) => {
+        const eventDate = parseDate(event.date);
+        const eventEndDate = event.endDate ? parseDate(event.endDate) : eventDate;
+        
+        if (eventDate <= today && today <= eventEndDate) {
+            return 'today';
+        }
+        if (eventDate.getTime() === tomorrow.getTime()) {
+            return 'tomorrow';
+        }
+        if (eventDate > today && eventDate <= nextWeek) {
+            return 'next7days';
+        }
+        if (eventDate < today) {
+            return 'past';
+        }
+        return 'future';
+    };
+    
+    const filteredEvents = React.useMemo(() => {
+        return SKIA_EVENTS.filter(event => {
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                if (!event.event.toLowerCase().includes(query)) {
+                    return false;
+                }
+            }
+            
+            if (selectedTerm !== 'all' && event.term !== parseInt(selectedTerm)) {
+                return false;
+            }
+            
+            if (selectedType !== 'all' && event.type !== selectedType) {
+                return false;
+            }
+            
+            const status = getEventStatus(event);
+            if (selectedView === 'upcoming') {
+                return status !== 'past';
+            }
+            if (selectedView === 'today') {
+                return status === 'today';
+            }
+            if (selectedView === 'week') {
+                return status === 'today' || status === 'tomorrow' || status === 'next7days';
+            }
+            
+            return true;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [searchQuery, selectedTerm, selectedType, selectedView]);
+    
+    const todayCount = SKIA_EVENTS.filter(e => getEventStatus(e) === 'today').length;
+    const tomorrowCount = SKIA_EVENTS.filter(e => getEventStatus(e) === 'tomorrow').length;
+    const weekCount = SKIA_EVENTS.filter(e => {
+        const status = getEventStatus(e);
+        return status === 'today' || status === 'tomorrow' || status === 'next7days';
+    }).length;
+    
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    };
+    
+    const getEventColors = (event) => {
+        const status = getEventStatus(event);
+        
+        if (status === 'today') {
+            return 'border-l-4 border-green-500 bg-green-50';
+        }
+        if (status === 'tomorrow') {
+            return 'border-l-4 border-orange-500 bg-orange-50';
+        }
+        if (status === 'next7days') {
+            return 'border-l-4 border-purple-500 bg-purple-50';
+        }
+        
+        return 'border-l-4 border-gray-300 bg-gray-50';
+    };
+    
+    const getTypeBadge = (type) => {
+        const badges = {
+            holiday: { text: 'Holiday', class: 'bg-red-100 text-red-800' },
+            exam: { text: 'Exams', class: 'bg-indigo-100 text-indigo-800' },
+            graduation: { text: 'Graduation', class: 'bg-blue-100 text-blue-800' },
+            celebration: { text: 'Celebration', class: 'bg-pink-100 text-pink-800' },
+            academic: { text: 'Academic', class: 'bg-gray-100 text-gray-800' },
+            parent: { text: 'Parents', class: 'bg-teal-100 text-teal-800' },
+            spirit: { text: 'Spirit', class: 'bg-yellow-100 text-yellow-800' },
+            staff: { text: 'Staff', class: 'bg-gray-100 text-gray-600' },
+            fundraiser: { text: 'Fundraiser', class: 'bg-green-100 text-green-800' }
+        };
+        
+        return badges[type] || { text: 'Event', class: 'bg-gray-100 text-gray-800' };
+    };
+    
+    const exportToCalendar = (event) => {
+        const startDate = new Date(event.date);
+        const endDate = event.endDate ? new Date(event.endDate) : startDate;
+        
+        const formatICSDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        
+        const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:${event.event}
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+DESCRIPTION:${event.type} event at St. Kitts International Academy
+LOCATION:St. Kitts International Academy
+END:VEVENT
+END:VCALENDAR`;
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${event.event.replace(/[^a-z0-9]/gi, '_')}.ics`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    const exportAllEvents = () => {
+        const formatICSDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        
+        let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SKIA//Events Calendar 2025-2026//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+        
+        filteredEvents.forEach(event => {
+            const startDate = new Date(event.date);
+            const endDate = event.endDate ? new Date(event.endDate) : startDate;
+            
+            icsContent += `BEGIN:VEVENT
+SUMMARY:${event.event}
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+DESCRIPTION:${event.type} event at St. Kitts International Academy
+LOCATION:St. Kitts International Academy
+STATUS:CONFIRMED
+END:VEVENT
+`;
+        });
+        
+        icsContent += 'END:VCALENDAR';
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'SKIA_Events_2025-2026.ics';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    const getModalEvents = (type) => {
+        switch(type) {
+            case 'today':
+                return SKIA_EVENTS.filter(e => getEventStatus(e) === 'today');
+            case 'tomorrow':
+                return SKIA_EVENTS.filter(e => getEventStatus(e) === 'tomorrow');
+            case 'next7days':
+                return SKIA_EVENTS.filter(e => {
+                    const status = getEventStatus(e);
+                    return status === 'today' || status === 'tomorrow' || status === 'next7days';
+                });
+            case 'all':
+                return SKIA_EVENTS;
+            default:
+                return [];
+        }
+    };
+    
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <img 
+                                src="https://skiacademy.net/wp-content/uploads/2023/02/1478111587-150x150.gif" 
+                                alt="SKI Academy Logo" 
+                                className="w-12 h-12 rounded-full"
+                            />
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-900">SKI Academy Events Portal</h1>
+                                <p className="text-gray-600">St. Kitts International Academy • 2025-2026</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button
+                                onClick={exportAllEvents}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                                title="Export all visible events to calendar"
+                            >
+                                📥 Export All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Quick Stats - Clickable */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div 
+                        onClick={() => setModalView('today')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Today</p>
+                                <p className="text-2xl font-bold text-green-600">{todayCount}</p>
+                            </div>
+                            <div className="text-3xl">📅</div>
+                        </div>
+                    </div>
+                    <div 
+                        onClick={() => setModalView('tomorrow')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Tomorrow</p>
+                                <p className="text-2xl font-bold text-orange-600">{tomorrowCount}</p>
+                            </div>
+                            <div className="text-3xl">⏰</div>
+                        </div>
+                    </div>
+                    <div 
+                        onClick={() => setModalView('next7days')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Next 7 Days</p>
+                                <p className="text-2xl font-bold text-purple-600">{weekCount}</p>
+                            </div>
+                            <div className="text-3xl">📆</div>
+                        </div>
+                    </div>
+                    <div 
+                        onClick={() => setModalView('all')}
+                        className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 cursor-pointer hover:shadow-lg transition-shadow"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Total Events</p>
+                                <p className="text-2xl font-bold text-blue-600">{SKIA_EVENTS.length}</p>
+                            </div>
+                            <div className="text-3xl">🎯</div>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Filters */}
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <div className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setSelectedView('upcoming')}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    selectedView === 'upcoming'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                All Upcoming
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('today')}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    selectedView === 'today'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                Today {todayCount > 0 && `(${todayCount})`}
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('week')}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    selectedView === 'week'
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                Next 7 Days {weekCount > 0 && `(${weekCount})`}
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('all')}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    selectedView === 'all'
+                                        ? 'bg-gray-600 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                All Events
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4">
+                            <select
+                                value={selectedTerm}
+                                onChange={(e) => setSelectedTerm(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Terms</option>
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                            </select>
+                            
+                            <select
+                                value={selectedType}
+                                onChange={(e) => setSelectedType(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Types</option>
+                                <option value="academic">Academic</option>
+                                <option value="holiday">Holidays</option>
+                                <option value="exam">Exams</option>
+                                <option value="graduation">Graduations</option>
+                                <option value="celebration">Celebrations</option>
+                                <option value="parent">Parent Events</option>
+                                <option value="spirit">Spirit Events</option>
+                                <option value="staff">Staff Only</option>
+                            </select>
+                            
+                            <input
+                                type="text"
+                                placeholder="Search events..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Events List */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-semibold mb-4">
+                        {selectedView === 'today' && 'Today\'s Events'}
+                        {selectedView === 'week' && 'Next 7 Days'}
+                        {selectedView === 'upcoming' && 'Upcoming Events'}
+                        {selectedView === 'all' && 'All Events'}
+                        <span className="text-sm text-gray-500 ml-2">({filteredEvents.length} events)</span>
+                    </h2>
+                    
+                    {filteredEvents.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <div className="text-5xl mb-4">📭</div>
+                            <p className="text-lg">No events found</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                            {filteredEvents.map((event, idx) => {
+                                const status = getEventStatus(event);
+                                const typeBadge = getTypeBadge(event.type);
+                                
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`${getEventColors(event)} rounded-lg p-4 fade-in hover:shadow-md transition-shadow`}
+                                        style={{ animationDelay: `${idx * 50}ms` }}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-semibold text-gray-900">
+                                                        {event.event}
+                                                    </h3>
+                                                    {event.important && (
+                                                        <span className="text-yellow-500">⭐</span>
+                                                    )}
+                                                    {event.closed && (
+                                                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                                            School Closed
+                                                        </span>
+                                                    )}
+                                                    {event.noClasses && (
+                                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                                                            No Classes
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                    <span className="flex items-center gap-1">
+                                                        📅 {formatDate(event.date)}
+                                                        {event.endDate && ` - ${formatDate(event.endDate)}`}
+                                                    </span>
+                                                    {event.time && (
+                                                        <span className="flex items-center gap-1">
+                                                            🕐 {event.time}
+                                                        </span>
+                                                    )}
+                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${typeBadge.class}`}>
+                                                        {typeBadge.text}
+                                                    </span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            exportToCalendar(event);
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                                        title="Add to calendar"
+                                                    >
+                                                        📅 Add to Calendar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="ml-4">
+                                                {status === 'today' && (
+                                                    <span className="inline-block bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium animate-pulse">
+                                                        TODAY
+                                                    </span>
+                                                )}
+                                                {status === 'tomorrow' && (
+                                                    <span className="inline-block bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                                        TOMORROW
+                                                    </span>
+                                                )}
+                                                {status === 'next7days' && (
+                                                    <span className="inline-block bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                                        NEXT 7 DAYS
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+                
+                {/* Legend */}
+                <div className="mt-6 bg-white rounded-lg shadow p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Color Legend</h3>
+                    <div className="flex flex-wrap gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-green-500 rounded"></div>
+                            <span>Starting Today</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                            <span>Tomorrow</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                            <span>Next 7 Days</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span>⭐</span>
+                            <span>Important Event</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Modal for Stat Cards */}
+            {modalView && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden fade-in">
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                {modalView === 'today' && (
+                                    <>
+                                        <span className="text-green-600">📅</span>
+                                        Today's Events ({getModalEvents('today').length})
+                                    </>
+                                )}
+                                {modalView === 'tomorrow' && (
+                                    <>
+                                        <span className="text-orange-600">⏰</span>
+                                        Tomorrow's Events ({getModalEvents('tomorrow').length})
+                                    </>
+                                )}
+                                {modalView === 'next7days' && (
+                                    <>
+                                        <span className="text-purple-600">📆</span>
+                                        Next 7 Days ({getModalEvents('next7days').length})
+                                    </>
+                                )}
+                                {modalView === 'all' && (
+                                    <>
+                                        <span className="text-blue-600">🎯</span>
+                                        All Events ({getModalEvents('all').length})
+                                    </>
+                                )}
+                            </h2>
+                            <button
+                                onClick={() => setModalView(null)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <div className="overflow-y-auto max-h-[60vh] space-y-2">
+                                {getModalEvents(modalView).length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <p className="text-lg">No events found</p>
+                                    </div>
+                                ) : (
+                                    getModalEvents(modalView).map((event, idx) => {
+                                        const typeBadge = getTypeBadge(event.type);
+                                        
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`${getEventColors(event)} rounded-lg p-4 fade-in`}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className="font-semibold text-gray-900">
+                                                                {event.event}
+                                                            </h3>
+                                                            {event.important && (
+                                                                <span className="text-yellow-500">⭐</span>
+                                                            )}
+                                                            {event.closed && (
+                                                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                                                    School Closed
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                            <span>📅 {formatDate(event.date)}</span>
+                                                            {event.time && <span>🕐 {event.time}</span>}
+                                                            <span className={`px-2 py-1 rounded text-xs ${typeBadge.class}`}>
+                                                                {typeBadge.text}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <button
+                                                        onClick={() => exportToCalendar(event)}
+                                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                                    >
+                                                        📅 Add
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Render the app
+ReactDOM.render(React.createElement(SKIAPortal), document.getElementById('root'));
+</script>
+</body>
+</html>
